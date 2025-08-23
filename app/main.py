@@ -1,10 +1,45 @@
-from fastapi import FastAPI, Query
-from app.rag.graph_builder import run_rag_graph
+import os
+from fastapi import FastAPI, File, Query, UploadFile
+from app.rag.state import GraphState, QueryState
+from app.rag.workflow import pdf_graph, query_graph
+from langchain_community.vectorstores import FAISS
 
 app = FastAPI(title="PDF RAG API")
+vectorstore: FAISS | None = None
 
 
-@app.get("/ask")
-def ask_question(question: str = Query(..., description="질문 입력")):
-    answer = run_rag_graph(question)
-    return {"question": question, "answer": answer}
+@app.post("/upload")
+async def file_upload(file: UploadFile = File(...)):
+
+    # 1. 업로드 파일 저장
+    temp_path = f"./temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        buffer.write(await file.read())
+
+    initial_state: GraphState = {"file_path": temp_path}
+    final_state = pdf_graph.invoke(initial_state)
+
+    # 3. 벡터스토어 저장
+    vectorstore = final_state["vectorstore"]
+
+    # 4. 임시파일 삭제
+    os.remove(temp_path)
+
+    return {"message": f"PDF {file.filename} successfully"}
+
+
+@app.get("/query")
+async def query_rag(question: str = Query(..., description="질문할 내용을 입력")):
+    if not hasattr(app.state, "vectorstore"):
+        return {"error": "먼저 PDF를 업로드하고 벡터스토어를 생성하세요."}
+
+    state: QueryState = {"question": question, "vectorstore": app.state.vectorstore}
+
+    # 3️⃣ query workflow 실행
+    final_state = query_graph.invoke(state)
+
+    return {
+        "query": question,
+        "answer": final_state.get("answer", ""),
+        "context": final_state.get("context", ""),
+    }
