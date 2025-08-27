@@ -1,3 +1,5 @@
+from uuid import uuid4
+import os
 from app.core import llm_client
 from app.rag.state import GraphState, QueryState
 
@@ -11,8 +13,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 
+STORES_DIR = "./stores"
+os.makedirs(STORES_DIR, exist_ok=True)
+
+
 # PDF 가져오기
 def load_pdf(state: GraphState) -> GraphState:
+    pdf_id = str(uuid4())
+    state["pdf_id"] = pdf_id
     loader = PyPDFLoader(state["file_path"])
     state["documents"] = loader.load()
     return state
@@ -28,7 +36,25 @@ def split_chunks(state: GraphState) -> GraphState:
 # 임베딩, 벡터스토어 생성(FAISS)
 def create_vectorstore(state: GraphState) -> GraphState:
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-    state["vectorstore"] = FAISS.from_documents(state.get("documents", []), embeddings)
+    state["vectorstore"] = FAISS.from_documents(state.get("chunks", []), embeddings)
+    return state
+
+
+# FAISS 디스크 저장
+def save_vectorstore(state: GraphState) -> GraphState:
+    pdf_id = state.get("pdf_id")
+    if not pdf_id:
+        raise ValueError("pdf_id가 state에 존재하지 않습니다.")
+
+    faiss_store: FAISS | None = state.get("vectorstore")
+    if faiss_store is None:
+        raise ValueError("vectorstore가 state에 존재하지 않습니다.")
+
+    path = os.path.join(STORES_DIR, pdf_id)
+    os.makedirs(path, exist_ok=True)
+    faiss_store.save_local(path)
+    state["store_path"] = path
+
     return state
 
 
