@@ -17,15 +17,16 @@ async def file_upload(file: UploadFile = File(...)):
         buffer.write(await file.read())
 
     initial_state: GraphState = {"file_path": temp_path}
-    final_state = pdf_graph.invoke(initial_state)
+    final_state = await pdf_graph.ainvoke(initial_state)
 
-    # 3. 벡터스토어 저장
-    vectorstore = final_state["vectorstore"]
-
-    # 4. 임시파일 삭제
+    # 2. 임시파일 삭제
     os.remove(temp_path)
 
-    return {"message": f"PDF {file.filename} successfully"}
+    return {
+        "message": f"PDF {file.filename} uploaded successfully",
+        "pdf_id": final_state.get("pdf_id"),
+        "store_path": final_state.get("store_path"),
+    }
 
 
 @app.get("/query")
