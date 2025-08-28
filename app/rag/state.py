@@ -1,9 +1,7 @@
-from typing import Annotated, List
-from numpy import long, number
+from typing import List
 from typing_extensions import NotRequired, TypedDict
 from langchain_community.vectorstores import FAISS
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
-from langgraph.graph.message import add_messages
+from langchain_core.messages import BaseMessage
 
 
 class GraphState(TypedDict):
@@ -16,7 +14,9 @@ class GraphState(TypedDict):
 
 
 class QueryState(TypedDict):
+    pdf_id: str
     question: str
-    vectorstore: FAISS
+    vectorstore: NotRequired[FAISS]
     context: NotRequired[str]
     answer: NotRequired[str]
+    history: NotRequired[List[BaseMessage]]
