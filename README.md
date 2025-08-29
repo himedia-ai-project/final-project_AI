@@ -31,15 +31,14 @@ app/
 
 1. 의존성 설치
    ```bash
-   pip install -r requirements.txt
-   # 또는
+  
    pip install uv
    uv pip install -r requirements.txt
    ```
 
 2. 애플리케이션 실행
    ```bash
-   python app/main.py
+   uv run uvicorn app.main:app --reload
    ```
 
 ## 기능 예시
