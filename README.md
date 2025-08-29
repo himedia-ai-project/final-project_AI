@@ -5,20 +5,22 @@
 ## 주요 폴더 및 파일 구조
 
 ```
-pyproject.toml
-README.md
-uv.lock
-app/
-  main.py
-  api/
-  core/
-    llm_client.py
-  docs/
-    iphone.pdf
-  rag/
-    nodes.py
-    state.py
-    workflow.py
+
+├── pyproject.toml      # 프로젝트 의존성 및 패키지 설정
+├── README.md           # 프로젝트 문서
+├── uv.lock             # uv 패키지 관리 Lock 파일
+├── app/
+│   ├── main.py         # FastAPI 진입점 (서버 실행)
+│   ├── api/            # API 라우터 및 엔드포인트
+│   ├── core/
+│   │   └── llm\_client.py  # LLM 클라이언트 설정 (OpenAI 등)
+│   ├── docs/
+│   │   └── iphone.pdf  # 예시 문서 (RAG 학습 데이터)
+│   └── rag/
+│       ├── nodes.py    # LangGraph 노드 정의
+│       ├── state.py    # 상태 관리 (RAG 상태 저장)
+│       └── workflow\.py # 전체 워크플로우 정의
+
 ```
 
 ### 주요 구성 요소
