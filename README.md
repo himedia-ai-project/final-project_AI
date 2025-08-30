@@ -54,5 +54,10 @@
 - LLM 기반 질의응답
 - RAG 워크플로우 관리
 
----
 
+
+## 📄 추가 문서  
+
+- [프로젝트 소개 (Wiki)](../../wiki/01_프로젝트-소개)
+- [기획 발표 자료 (PDF, Google Drive)](https://drive.google.com/file/d/1Z77Z9GfBNW_sZkw0HPKqHdN1baJ4IMEZ/view?usp=sharing)
+- [중간 발표 자료 (PDF, Google Drive)](https://drive.google.com/file/d/16jz149EbOBO0RoWTA0t9kU1WicXP6L5J/view?usp=sharing)
