@@ -6,7 +6,7 @@ from langchain_core.messages import BaseMessage
 
 class GraphState(TypedDict):
     file_path: str
-    pdf_id: NotRequired[str]
+    pdf_id: str
     documents: NotRequired[List]
     chunks: NotRequired[List]
     vectorstore: NotRequired[FAISS]

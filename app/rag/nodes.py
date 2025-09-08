@@ -21,8 +21,6 @@ MAX_HISTORY = 10
 
 # PDF 가져오기
 def load_pdf(state: GraphState) -> GraphState:
-    pdf_id = str(uuid4())
-    state["pdf_id"] = pdf_id
     loader = PyPDFLoader(state["file_path"])
     state["documents"] = loader.load()
     return state

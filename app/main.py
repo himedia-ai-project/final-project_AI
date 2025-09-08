@@ -1,6 +1,6 @@
 import os
 from typing import Any, Dict, cast
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 from app.rag.state import GraphState, QueryState
 from app.rag.workflow import pdf_graph, query_graph
 from langchain_core.messages import HumanMessage
@@ -11,14 +11,15 @@ session_store: Dict[str, dict[str, Any]] = {}
 
 
 @app.post("/upload")
-async def file_upload(file: UploadFile = File(...)):
+async def file_upload(file: UploadFile = File(...),
+                      pdf_id: str = Form(...)):
 
     # 1. 업로드 파일 저장
     temp_path = f"./temp_{file.filename}"
     with open(temp_path, "wb") as buffer:
         buffer.write(await file.read())
 
-    initial_state: GraphState = {"file_path": temp_path}
+    initial_state: GraphState = {"file_path": temp_path, "pdf_id": pdf_id}
     final_state = await pdf_graph.ainvoke(initial_state)
 
     # 2. 임시파일 삭제
