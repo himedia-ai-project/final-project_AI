@@ -1,9 +1,10 @@
 import os
-from typing import Any, Dict, cast
+from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, File, UploadFile, Form
+from pydantic import BaseModel
 from app.rag.state import GraphState, QueryState
 from app.rag.workflow import pdf_graph, query_graph
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
 app = FastAPI(title="PDF RAG API")
 # session 저장소
@@ -12,7 +13,7 @@ session_store: Dict[str, dict[str, Any]] = {}
 
 @app.post("/upload")
 async def file_upload(file: UploadFile = File(...),
-                      pdf_id: str = Form(...)):
+                      pdf_id: int = Form(...)):
 
     # 1. 업로드 파일 저장
     temp_path = f"./temp_{file.filename}"
@@ -32,42 +33,35 @@ async def file_upload(file: UploadFile = File(...),
     }
 
 
+class ChatIn(BaseModel):
+    pdf_id: int
+    question: str
+    history: list[dict[str, str]] | None = None
+
 @app.post("/chat")
-async def chat(user_id: int, pdf_id: str, question: str):
-    # 1. 세션 키 생성
-    session_key = f"{user_id}:{pdf_id}"
+async def chat(in_: ChatIn):
+    messages: List[BaseMessage] = []
 
-    # 2. 기존 세션 불러오기 or 새로 생성
-    if session_key in session_store:
-        state: QueryState = cast(QueryState, session_store[session_key])
-    else:
-        state: QueryState = {
-            "pdf_id": pdf_id,
-            "question": question,
-            "history": [],
-        }
+    # history → BaseMessage 변환 (여기서 바로 처리)
+    if in_.history:
+        for m in in_.history:
+            role = (m.get("role") or "").lower()
+            content = m.get("content") or ""
+            if role == "user":
+                messages.append(HumanMessage(content=content))
+            elif role == "assistant":
+                messages.append(AIMessage(content=content))
 
-    # 3. 중복 질문 방지
-    messages = state.get("history", [])
-    if (
-        not messages
-        or not isinstance(messages[-1], HumanMessage)
-        or messages[-1].content != question
-    ):
-        messages.append(HumanMessage(content=question))
-    state["history"] = messages
+    if not messages or not isinstance(messages[-1], HumanMessage) or messages[-1].content != in_.question:
+        messages.append(HumanMessage(content=in_.question))
 
-    # 4. 그래프 실행
+    state: QueryState = {
+        "pdf_id": in_.pdf_id,
+        "question": in_.question,
+        "history": messages,
+    }
+
+    # 그래프 실행
     result = await query_graph.ainvoke(state)
 
-    # 최신 state 저장
-    session_store[session_key] = result
-
-    return {
-        "pdf_id": pdf_id,
-        "question": question,
-        "answer": result["answer"],
-        "history": [
-            {"role": m.type, "content": m.content} for m in result.get("history", [])
-        ],
-    }
+    return result["answer"]
