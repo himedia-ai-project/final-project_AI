@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, File, UploadFile, Form
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.rag.state import GraphState, QueryState
 from app.rag.workflow import pdf_graph, query_graph
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
@@ -34,31 +34,28 @@ async def file_upload(file: UploadFile = File(...),
 
 
 class ChatIn(BaseModel):
-    pdf_id: int
+    pdf_id: int = Field(alias="productId")
     question: str
-    history: list[dict[str, str]] | None = None
+    chatMessage: List[Dict[str, str]] = Field(default_factory=list, alias="messages")
 
 @app.post("/chat")
-async def chat(in_: ChatIn):
-    messages: List[BaseMessage] = []
+async def chat(request: ChatIn):
+    history: List[BaseMessage] = []
 
-    # history → BaseMessage 변환 (여기서 바로 처리)
-    if in_.history:
-        for m in in_.history:
-            role = (m.get("role") or "").lower()
-            content = m.get("content") or ""
+    # chatMessage → BaseMessage 변환 (여기서 바로 처리)
+    if request.chatMessage:
+        for m in request.chatMessage:
+            role = m.get("role")
+            messages = m.get("messages")
             if role == "user":
-                messages.append(HumanMessage(content=content))
-            elif role == "assistant":
-                messages.append(AIMessage(content=content))
-
-    if not messages or not isinstance(messages[-1], HumanMessage) or messages[-1].content != in_.question:
-        messages.append(HumanMessage(content=in_.question))
+                history.append(HumanMessage(content=messages))
+            elif role == "bot":
+                history.append(AIMessage(content=messages))
 
     state: QueryState = {
-        "pdf_id": in_.pdf_id,
-        "question": in_.question,
-        "history": messages,
+        "pdf_id": request.pdf_id,
+        "question": request.question,
+        "history": history,
     }
 
     # 그래프 실행
