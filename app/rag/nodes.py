@@ -21,8 +21,6 @@ MAX_HISTORY = 10
 
 # PDF 가져오기
 def load_pdf(state: GraphState) -> GraphState:
-    pdf_id = str(uuid4())
-    state["pdf_id"] = pdf_id
     loader = PyPDFLoader(state["file_path"])
     state["documents"] = loader.load()
     return state
@@ -44,7 +42,7 @@ def create_vectorstore(state: GraphState) -> GraphState:
 
 # FAISS 디스크 저장
 def save_vectorstore(state: GraphState) -> GraphState:
-    pdf_id = state.get("pdf_id")
+    pdf_id = str(state.get("pdf_id"))
     if not pdf_id:
         raise ValueError("pdf_id가 state에 존재하지 않습니다.")
 
@@ -62,7 +60,7 @@ def save_vectorstore(state: GraphState) -> GraphState:
 
 # 1.Vectorstore 로드
 def load_vectorstore(state: QueryState) -> QueryState:
-    pdf_id = state.get("pdf_id")
+    pdf_id = str(state.get("pdf_id"))
     if not pdf_id:
         raise ValueError("pdf_id가 state에 없습니다.")
 
