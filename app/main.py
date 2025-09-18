@@ -7,27 +7,19 @@ from app.rag.workflow import pdf_graph, query_graph
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
 app = FastAPI(title="PDF RAG API")
-# session 저장소
-session_store: Dict[str, dict[str, Any]] = {}
 
+
+class uploadIn(BaseModel):
+    pdf_id: int = Field(alias="productId")
+    fileUrl: str
 
 @app.post("/upload")
-async def file_upload(file: UploadFile = File(...),
-                      pdf_id: int = Form(...)):
-
-    # 1. 업로드 파일 저장
-    temp_path = f"./temp_{file.filename}"
-    with open(temp_path, "wb") as buffer:
-        buffer.write(await file.read())
-
-    initial_state: GraphState = {"file_path": temp_path, "pdf_id": pdf_id}
+async def file_upload(request: uploadIn):
+    initial_state: GraphState = {"file_path": request.fileUrl, "pdf_id": request.pdf_id}
     final_state = await pdf_graph.ainvoke(initial_state)
 
-    # 2. 임시파일 삭제
-    os.remove(temp_path)
-
     return {
-        "message": f"PDF {file.filename} uploaded successfully",
+        "message": f"PDF uploaded successfully",
         "pdf_id": final_state.get("pdf_id"),
         "store_path": final_state.get("store_path"),
     }
