@@ -1,7 +1,6 @@
-import os
-from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, File, UploadFile, Form
-from pydantic import BaseModel, Field
+from typing import List
+from fastapi import FastAPI
+from app.api.schemas import UploadIn, ChatIn
 from app.rag.state import GraphState, QueryState
 from app.rag.workflow import pdf_graph, query_graph
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
@@ -9,12 +8,8 @@ from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 app = FastAPI(title="PDF RAG API")
 
 
-class uploadIn(BaseModel):
-    pdf_id: int = Field(alias="productId")
-    fileUrl: str
-
 @app.post("/upload")
-async def file_upload(request: uploadIn):
+async def file_upload(request: UploadIn):
     initial_state: GraphState = {"file_path": request.fileUrl, "pdf_id": request.pdf_id}
     final_state = await pdf_graph.ainvoke(initial_state)
 
@@ -24,11 +19,6 @@ async def file_upload(request: uploadIn):
         "store_path": final_state.get("store_path"),
     }
 
-
-class ChatIn(BaseModel):
-    pdf_id: int = Field(alias="productId")
-    question: str
-    chatMessage: List[Dict[str, str]] = Field(default_factory=list, alias="messages")
 
 @app.post("/chat")
 async def chat(request: ChatIn):
