@@ -18,25 +18,26 @@ os.makedirs(STORES_DIR, exist_ok=True)
 MAX_HISTORY = 10
 
 
-# PDF 가져오기
-def load_pdf(state: GraphState) -> GraphState:
+# URL의 PDF를 임시파일로 저장하고 경로를 state['temp_path']에 기록
+def fetch_pdf(state: GraphState) -> GraphState:
     url = state["file_path"]
-
-    # 1) 임시 파일 저장
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        temp_file.write(response.content)
-        temp_file_path = temp_file.name
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        temp_file.write(resp.content)
+        state["temp_path"] = temp_file.name
+    return state
 
-    # 2) 파일 닫힌 상태에서 로드, 임시 파일 삭제
+
+# 임시파일을 읽어 state['documents']에 로드하고 항상 임시파일을 삭제
+def load_pdf(state: GraphState) -> GraphState:
+    temp_path = state.get("temp_path")
     try:
-        state["documents"] = PyPDFLoader(temp_file_path).load()
+        state["documents"] = PyPDFLoader(temp_path).load()
         return state
     finally:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 # 문서 청크
