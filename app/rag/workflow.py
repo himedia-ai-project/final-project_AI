@@ -3,6 +3,7 @@ from app.rag.nodes import (
     create_vectorstore,
     decide_next,
     generate_answer,
+    fetch_pdf,
     load_pdf,
     load_vectorstore,
     retrieve_context,
@@ -15,12 +16,14 @@ from app.rag.state import GraphState, QueryState
 
 # PDF Workflow
 pdf_workflow = StateGraph(GraphState)
+pdf_workflow.add_node("fetch_pdf", fetch_pdf)
 pdf_workflow.add_node("load_pdf", load_pdf)
 pdf_workflow.add_node("split_chunks", split_chunks)
 pdf_workflow.add_node("create_vectorstore", create_vectorstore)
 pdf_workflow.add_node("save_vectorstore", save_vectorstore)
 
-pdf_workflow.set_entry_point("load_pdf")
+pdf_workflow.set_entry_point("fetch_pdf")
+pdf_workflow.add_edge("fetch_pdf", "load_pdf")
 pdf_workflow.add_edge("load_pdf", "split_chunks")
 pdf_workflow.add_edge("split_chunks", "create_vectorstore")
 pdf_workflow.add_edge("create_vectorstore", "save_vectorstore")
